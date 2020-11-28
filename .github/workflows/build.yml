@@ -20,35 +20,35 @@ jobs:
           pytest -vv
 
       # deploy
-      - uses: actions/checkout@v2
-      - uses: akhileshns/heroku-deploy@v3.4.6
-        with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "rcoi-2-warranty"
-          heroku_email: "evgenij997@yandex.ru"
-          usedocker: true
-          docker_build_args: |
-            SCRIPT_NAME=warranty_service.py
-
-      - uses: actions/checkout@v2
-      - uses: akhileshns/heroku-deploy@v3.4.6
-        with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "rcoi-2-warehouse"
-          heroku_email: "evgenij997@yandex.ru"
-          usedocker: true
-          docker_build_args: |
-            SCRIPT_NAME=warehouse_service.py
-
-      - uses: actions/checkout@v2
-      - uses: akhileshns/heroku-deploy@v3.4.6
-        with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "rcoi-2-order"
-          heroku_email: "evgenij997@yandex.ru"
-          usedocker: true
-          docker_build_args: |
-            SCRIPT_NAME=order_service.py
+#      - uses: actions/checkout@v2
+#      - uses: akhileshns/heroku-deploy@v3.4.6
+#        with:
+#          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+#          heroku_app_name: "rcoi-2-warranty"
+#          heroku_email: "evgenij997@yandex.ru"
+#          usedocker: true
+#          docker_build_args: |
+#            SCRIPT_NAME=warranty_service.py
+#
+#      - uses: actions/checkout@v2
+#      - uses: akhileshns/heroku-deploy@v3.4.6
+#        with:
+#          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+#          heroku_app_name: "rcoi-2-warehouse"
+#          heroku_email: "evgenij997@yandex.ru"
+#          usedocker: true
+#          docker_build_args: |
+#            SCRIPT_NAME=warehouse_service.py
+#
+#      - uses: actions/checkout@v2
+#      - uses: akhileshns/heroku-deploy@v3.4.6
+#        with:
+#          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+#          heroku_app_name: "rcoi-2-order"
+#          heroku_email: "evgenij997@yandex.ru"
+#          usedocker: true
+#          docker_build_args: |
+#            SCRIPT_NAME=order_service.py
 
       - uses: actions/checkout@v2
       - uses: akhileshns/heroku-deploy@v3.4.6
