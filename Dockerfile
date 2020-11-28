@@ -1,6 +1,7 @@
 FROM python3.7
 
 ARG SCRIPT_NAME
-ADD . .
+ADD $SCRIPT_NAME $SCRIPT_NAME
+ADD database.py database.py
 
-CMD: python3 $SCRIPT_NAME
+CMD python3 $SCRIPT_NAME
