@@ -22,44 +22,44 @@ jobs:
       # warranty service deploy
       - uses: actions/checkout@v2
       - uses: akhileshns/heroku-deploy@v3.4.6
-      with:
-        heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-        heroku_app_name: "rcoi-2-warranty"
-        heroku_email: "evgenij997@yandex.ru"
-        usedocker: true
-        docker_build_args: |
-          SCRIPT_NAME
-      env:
-        SCRIPT_NAME: warranty_service.py
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "rcoi-2-warranty"
+          heroku_email: "evgenij997@yandex.ru"
+          usedocker: true
+          docker_build_args: |
+            SCRIPT_NAME
+        env:
+          SCRIPT_NAME: warranty_service.py
 
       # warehouse service deploy
       - uses: actions/checkout@v2
       - uses: akhileshns/heroku-deploy@v3.4.6
-      with:
-        heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-        heroku_app_name: "rcoi-2-warehouse"
-        heroku_email: "evgenij997@yandex.ru"
-        usedocker: true
-        docker_build_args: |
-          SCRIPT_NAME
-      env:
-        SCRIPT_NAME: warehouse_service.py
-        WARRANTY_SERVICE_URL: https://rcoi-2-warranty.herokuapp.com
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "rcoi-2-warehouse"
+          heroku_email: "evgenij997@yandex.ru"
+          usedocker: true
+          docker_build_args: |
+            SCRIPT_NAME
+        env:
+          SCRIPT_NAME: warehouse_service.py
+          WARRANTY_SERVICE_URL: https://rcoi-2-warranty.herokuapp.com
 
       # order service deploy
       - uses: actions/checkout@v2
       - uses: akhileshns/heroku-deploy@v3.4.6
-      with:
-        heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-        heroku_app_name: "rcoi-2-order"
-        heroku_email: "evgenij997@yandex.ru"
-        usedocker: true
-        docker_build_args: |
-          SCRIPT_NAME
-      env:
-        SCRIPT_NAME: order_service.py
-        WARRANTY_SERVICE_URL: https://rcoi-2-warranty.herokuapp.com
-        WAREHOUSE_SERVICE_URL: https://rcoi-2-warehouse.herokuapp.com
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "rcoi-2-order"
+          heroku_email: "evgenij997@yandex.ru"
+          usedocker: true
+          docker_build_args: |
+            SCRIPT_NAME
+        env:
+          SCRIPT_NAME: order_service.py
+          WARRANTY_SERVICE_URL: https://rcoi-2-warranty.herokuapp.com
+          WAREHOUSE_SERVICE_URL: https://rcoi-2-warehouse.herokuapp.com
 
       # store service deploy
       - uses: actions/checkout@v2
