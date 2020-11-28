@@ -7,4 +7,4 @@ ADD requirements.txt requirements.txt
 
 RUN pip install -r requirements.txt
 
-CMD python3 $SCRIPT_NAME
+CMD python $SCRIPT_NAME
