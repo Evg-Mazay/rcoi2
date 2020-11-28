@@ -58,4 +58,6 @@ jobs:
           heroku_email: "evgenij997@yandex.ru"
           usedocker: true
           docker_build_args: |
-            SCRIPT_NAME=store_service.py
+            SCRIPT_NAME
+        env:
+          SCRIPT_NAME: store_service.py

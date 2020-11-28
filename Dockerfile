@@ -1,4 +1,4 @@
-FROM python3.7
+FROM python:3.7.9-buster
 
 ARG SCRIPT_NAME
 ADD $SCRIPT_NAME $SCRIPT_NAME
