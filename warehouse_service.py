@@ -55,6 +55,11 @@ def refresh_items_in_db():
         print("Initialized default values in Item table")
 
 
+@app.route("/", methods=["GET"])
+def health_check():
+    return "UP", 200
+
+
 @app.route("/warehouse/<string:order_item_id>", methods=["GET"])
 def request_get_info(order_item_id):
     """

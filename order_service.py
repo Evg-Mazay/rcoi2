@@ -41,6 +41,10 @@ class Status(str, Enum):
     canceled = "CANCELED"
     waiting = "WAITING"
 
+@app.route("/", methods=["GET"])
+def health_check():
+    return "UP", 200
+
 
 @app.route("/orders/<string:user_uid>", methods=["POST"])
 def request_new_order(user_uid):

@@ -1,6 +1,5 @@
 FROM python3.7
 
-ARG SCRIPT_NAME
 ADD . .
 
 COMMAND: python3 $SCRIPT_NAME

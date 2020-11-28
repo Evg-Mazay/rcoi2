@@ -50,6 +50,11 @@ def is_user_exists(user_uid):
         return bool(user)
 
 
+@app.route("/", methods=["GET"])
+def health_check():
+    return "UP", 200
+
+
 @app.route("/store/<string:user_uid>/orders", methods=["GET"])
 def request_all_orders(user_uid):
     """

@@ -32,6 +32,11 @@ class WarrantyRequest(BaseModel):
     availableCount: int
 
 
+@app.route("/", methods=["GET"])
+def health_check():
+    return "UP", 200
+
+
 @app.route("/warranty/<string:item_uid>", methods=["GET"])
 def request_warranty_status(item_uid):
     """
