@@ -191,4 +191,4 @@ if __name__ == '__main__':
     print("LISTENING ON PORT:", PORT, "($PORT)")
     database.create_schema()
     app.url_map.strict_slashes = False
-    app.run("0.0.0.0", 8380)
+    app.run("0.0.0.0", PORT)

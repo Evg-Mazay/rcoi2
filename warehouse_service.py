@@ -181,4 +181,4 @@ if __name__ == '__main__':
     database.create_schema()
     refresh_items_in_db()
     app.url_map.strict_slashes = False
-    app.run("0.0.0.0", 8280)
+    app.run("0.0.0.0", PORT)
