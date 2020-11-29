@@ -73,6 +73,7 @@ def request_get_info(order_item_id):
             .filter(OrderItem.order_item_uid == order_item_id)
             .one_or_none()
         )
+        print("test item getting:", order_and_item)
         if not order_and_item:
             return {"message": "Not found"}, 404
         return {
@@ -98,6 +99,7 @@ def request_new_item():
             .filter(Item.size == new_item_request.size)
             .first()
         )
+        print("test item:", item)
         if not item:
             return {"message": "requested item not found"}, 404
         elif item.available_count == 0:
