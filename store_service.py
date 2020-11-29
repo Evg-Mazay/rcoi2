@@ -13,12 +13,12 @@ import database
 
 app = Flask(__name__)
 ROOT_PATH = "/api/v1"
-ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE", "localhost:8380")
-print(f"Order service url: {ORDER_SERVICE_URL} ($ORDER_SERVICE)")
-WAREHOUSE_SERVICE_URL = os.environ.get("WAREHOUSE_SERVICE", "localhost:8280")
-print(f"Warehouse service url: {WAREHOUSE_SERVICE_URL} ($WAREHOUSE_SERVICE)")
-WARRANTY_SERVICE_URL = os.environ.get("WARRANTY_SERVICE", "localhost:8180")
-print(f"Warranty service url: {WARRANTY_SERVICE_URL} ($WARRANTY_SERVICE)")
+ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "localhost:8380")
+print(f"Order service url: {ORDER_SERVICE_URL} ($ORDER_SERVICE_URL)")
+WAREHOUSE_SERVICE_URL = os.environ.get("WAREHOUSE_SERVICE_URL", "localhost:8280")
+print(f"Warehouse service url: {WAREHOUSE_SERVICE_URL} ($WAREHOUSE_SERVICE_URL)")
+WARRANTY_SERVICE_URL = os.environ.get("WARRANTY_SERVICE_URL", "localhost:8180")
+print(f"Warranty service url: {WARRANTY_SERVICE_URL} ($WARRANTY_SERVICE_URL)")
 
 
 class User(database.Base):

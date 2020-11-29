@@ -14,8 +14,8 @@ import database
 
 app = Flask(__name__)
 ROOT_PATH = "/api/v1"
-WARRANTY_SERVICE_URL = os.environ.get("WARRANTY_SERVICE", "localhost:8180")
-print(f"Warranty service url: {WARRANTY_SERVICE_URL} ($WARRANTY_SERVICE)")
+WARRANTY_SERVICE_URL = os.environ.get("WARRANTY_SERVICE_URL", "localhost:8180")
+print(f"Warranty service url: {WARRANTY_SERVICE_URL} ($WARRANTY_SERVICE_URL)")
 
 
 class Item(database.Base):
