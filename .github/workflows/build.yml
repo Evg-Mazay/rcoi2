@@ -45,7 +45,7 @@ jobs:
             WARRANTY_SERVICE_URL
         env:
           SCRIPT_NAME: warehouse_service.py
-          WARRANTY_SERVICE_URL: https://rcoi-2-warranty.herokuapp.com
+          WARRANTY_SERVICE_URL: rcoi-2-warranty.herokuapp.com
 
       # order service deploy
       - uses: actions/checkout@v2
@@ -61,8 +61,8 @@ jobs:
             WAREHOUSE_SERVICE_URL
         env:
           SCRIPT_NAME: order_service.py
-          WARRANTY_SERVICE_URL: https://rcoi-2-warranty.herokuapp.com
-          WAREHOUSE_SERVICE_URL: https://rcoi-2-warehouse.herokuapp.com
+          WARRANTY_SERVICE_URL: rcoi-2-warranty.herokuapp.com
+          WAREHOUSE_SERVICE_URL: rcoi-2-warehouse.herokuapp.com
 
       # store service deploy
       - uses: actions/checkout@v2
@@ -79,9 +79,9 @@ jobs:
             ORDER_SERVICE_URL
         env:
           SCRIPT_NAME: store_service.py
-          WARRANTY_SERVICE_URL: https://rcoi-2-warranty.herokuapp.com
-          WAREHOUSE_SERVICE_URL: https://rcoi-2-warehouse.herokuapp.com
-          ORDER_SERVICE_URL: https://rcoi-2-order.herokuapp.com
+          WARRANTY_SERVICE_URL: rcoi-2-warranty.herokuapp.com
+          WAREHOUSE_SERVICE_URL: rcoi-2-warehouse.herokuapp.com
+          ORDER_SERVICE_URL: rcoi-2-order.herokuapp.com
 
       # run tests
       - name: Run API Tests
