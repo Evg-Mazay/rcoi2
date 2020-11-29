@@ -77,3 +77,12 @@ jobs:
           WAREHOUSE_SERVICE_URL: https://rcoi-2-warehouse.herokuapp.com
           ORDER_SERVICE_URL: https://rcoi-2-order.herokuapp.com
 
+      # run tests
+      - name: Run API Tests
+        id: run-newman
+        uses: anthonyvscode/newman-action@v1
+        with:
+          collection: postman_tests/postman-collection.json
+          environment: postman_tests/postman-heroku-environment.json
+          delayRequest: 50
+          reporters: cli

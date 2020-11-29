@@ -11,9 +11,10 @@ import requests
 import database
 
 app = Flask(__name__)
-WAREHOUSE_SERVICE_URL = os.environ.get("WAREHOUSE_SERVICE", "localhost")
+ROOT_PATH = "/api/v1"
+WAREHOUSE_SERVICE_URL = os.environ.get("WAREHOUSE_SERVICE", "localhost:8280")
 print(f"Warehouse service url: {WAREHOUSE_SERVICE_URL} ($WAREHOUSE_SERVICE)")
-WARRANTY_SERVICE_URL = os.environ.get("WARRANTY_SERVICE", "localhost")
+WARRANTY_SERVICE_URL = os.environ.get("WARRANTY_SERVICE", "localhost:8180")
 print(f"Warranty service url: {WARRANTY_SERVICE_URL} ($WARRANTY_SERVICE)")
 
 
@@ -41,12 +42,13 @@ class Status(str, Enum):
     canceled = "CANCELED"
     waiting = "WAITING"
 
-@app.route("/", methods=["GET"])
+
+@app.route("/manage/health", methods=["GET"])
 def health_check():
     return "UP", 200
 
 
-@app.route("/orders/<string:user_uid>", methods=["POST"])
+@app.route(f"{ROOT_PATH}/orders/<string:user_uid>", methods=["POST"])
 def request_new_order(user_uid):
     """
     Сделать заказ от имени пользователя
@@ -58,8 +60,13 @@ def request_new_order(user_uid):
 
     order_uid = str(uuid4())
 
+    if not requests.get(f"http://{WAREHOUSE_SERVICE_URL}/manage/health").ok:
+        return {"message": "Warehouse sevice unavailable"}, 422
+    if not requests.get(f"http://{WARRANTY_SERVICE_URL}/manage/health").ok:
+        return {"message": "Warranty sevice unavailable"}, 422
+
     warehouse_service_response = requests.post(
-        f"http://{WAREHOUSE_SERVICE_URL}/warehouse",
+        f"http://{WAREHOUSE_SERVICE_URL}{ROOT_PATH}/warehouse",
         json={
             "orderUid": order_uid,
             "model": new_item_request.model,
@@ -74,7 +81,7 @@ def request_new_order(user_uid):
         return {"message": "Something terrible happens to warehouse :/"}, 500
     item_uid = warehouse_service_response.json().get("orderItemUid")
 
-    requests.post(f"http://{WARRANTY_SERVICE_URL}/warranty/{item_uid}")
+    requests.post(f"http://{WARRANTY_SERVICE_URL}{ROOT_PATH}/warranty/{item_uid}")
 
     with database.Session() as s:
         s.add(Order(
@@ -85,10 +92,10 @@ def request_new_order(user_uid):
             user_uid=user_uid,
         ))
 
-    return {"orderUid": order_uid}, 201
+    return {"orderUid": order_uid}, 200
 
 
-@app.route("/orders/<string:user_uid>/<string:order_uid>", methods=["GET"])
+@app.route(f"{ROOT_PATH}/orders/<string:user_uid>/<string:order_uid>", methods=["GET"])
 def request_order(user_uid, order_uid):
     """
     Получить информацию по конкретному заказу пользователя
@@ -111,7 +118,7 @@ def request_order(user_uid, order_uid):
         }, 200
 
 
-@app.route("/orders/<string:user_uid>", methods=["GET"])
+@app.route(f"{ROOT_PATH}/orders/<string:user_uid>", methods=["GET"])
 def request_all_orders(user_uid):
     """
     Получить все заказы пользователя
@@ -128,7 +135,7 @@ def request_all_orders(user_uid):
         return jsonify(result), 200
 
 
-@app.route("/orders/<string:order_uid>/warranty", methods=["POST"])
+@app.route(f"{ROOT_PATH}/orders/<string:order_uid>/warranty", methods=["POST"])
 def request_warranty(order_uid):
     """
     Запрос гарантии по заказу
@@ -138,13 +145,16 @@ def request_warranty(order_uid):
     except ValidationError as e:
         return {"message": e.errors()}, 400
 
+    if not requests.get(f"http://{WAREHOUSE_SERVICE_URL}/manage/health").ok:
+        return {"message": "Warehouse sevice unavailable"}, 422
+
     with database.Session() as s:
         order = s.query(Order).filter(Order.order_uid == order_uid).one_or_none()
         if not order:
             return {"message": "Order not found"}, 404
 
         warehouse_service_response = requests.post(
-            f"http://{WAREHOUSE_SERVICE_URL}/warehouse/{order.item_uid}/warranty",
+            f"http://{WAREHOUSE_SERVICE_URL}{ROOT_PATH}/warehouse/{order.item_uid}/warranty",
             json={"reason": warranty_request.reason}
         )
         if not warehouse_service_response.ok:
@@ -153,7 +163,7 @@ def request_warranty(order_uid):
     return warehouse_service_response.json(), 200
 
 
-@app.route("/orders/<string:order_uid>", methods=["DELETE"])
+@app.route(f"{ROOT_PATH}/orders/<string:order_uid>", methods=["DELETE"])
 def request_delete_order(order_uid):
     """
     Вернуть заказ
@@ -163,8 +173,11 @@ def request_delete_order(order_uid):
         if not order:
             return {"message": "Order not found"}, 404
 
+        if not requests.get(f"http://{WAREHOUSE_SERVICE_URL}/manage/health").ok:
+            return {"message": "Warehouse sevice unavailable"}, 422
+
         warehouse_service_response = requests.delete(
-            f"http://{WAREHOUSE_SERVICE_URL}/warehouse/{order.item_uid}",
+            f"http://{WAREHOUSE_SERVICE_URL}{ROOT_PATH}/warehouse/{order.item_uid}",
         )
         if not warehouse_service_response.ok:
             return {"message": "Order not found on warehouse"}, 422
@@ -177,4 +190,5 @@ if __name__ == '__main__':
     PORT = os.environ.get("PORT", 7777)
     print("LISTENING ON PORT:", PORT, "($PORT)")
     database.create_schema()
-    app.run("0.0.0.0", PORT)
+    app.url_map.strict_slashes = False
+    app.run("0.0.0.0", 8380)

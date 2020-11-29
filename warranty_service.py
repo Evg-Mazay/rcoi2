@@ -10,6 +10,7 @@ import database
 
 
 app = Flask(__name__)
+ROOT_PATH = "/api/v1"
 
 
 class Warranty(database.Base):
@@ -32,12 +33,12 @@ class WarrantyRequest(BaseModel):
     availableCount: int
 
 
-@app.route("/", methods=["GET"])
+@app.route("/manage/health", methods=["GET"])
 def health_check():
     return "UP", 200
 
 
-@app.route("/warranty/<string:item_uid>", methods=["GET"])
+@app.route(f"{ROOT_PATH}/warranty/<string:item_uid>", methods=["GET"])
 def request_warranty_status(item_uid):
     """
     Информация о статусе гарантии
@@ -53,7 +54,7 @@ def request_warranty_status(item_uid):
                }, 200
 
 
-@app.route("/warranty/<string:item_uid>/warranty", methods=["POST"])
+@app.route(f"{ROOT_PATH}/warranty/<string:item_uid>/warranty", methods=["POST"])
 def request_warranty_result(item_uid):
     """
     Запрос решения по гарантии
@@ -80,7 +81,7 @@ def request_warranty_result(item_uid):
                }, 200
 
 
-@app.route("/warranty/<string:item_uid>", methods=["POST"])
+@app.route(f"{ROOT_PATH}/warranty/<string:item_uid>", methods=["POST"])
 def request_start_warranty(item_uid):
     """
     Запрос на начало гарантийного периода
@@ -94,7 +95,7 @@ def request_start_warranty(item_uid):
     return '', 204
 
 
-@app.route("/warranty/<string:item_uid>", methods=["DELETE"])
+@app.route(f"{ROOT_PATH}/warranty/<string:item_uid>", methods=["DELETE"])
 def request_stop_warranty(item_uid):
     """
     Ззапрос на закрытие гарантии
@@ -103,6 +104,8 @@ def request_stop_warranty(item_uid):
         warranty = s.query(Warranty).filter(Warranty.item_uid == item_uid).one_or_none()
         if warranty:
             warranty.status = Status.removed
+        else:
+            return {"message": "Not found"}, 404
     return '', 204
 
 
@@ -110,4 +113,5 @@ if __name__ == '__main__':
     PORT = os.environ.get("PORT", 7777)
     print("LISTENING ON PORT:", PORT, "($PORT)")
     database.create_schema()
-    app.run("0.0.0.0", PORT)
+    app.url_map.strict_slashes = False
+    app.run("0.0.0.0", 8180)

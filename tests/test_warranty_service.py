@@ -14,7 +14,7 @@ TEST_WARRANTY = {
 
 def test_request_start_warranty(fresh_database):
     with app.test_client() as test_client:
-        response = test_client.post("/warranty/1-1-1")
+        response = test_client.post("/api/v1/warranty/1-1-1")
         assert response.status_code == 204
     with Session() as s:
         created_warranty = s.query(Warranty).filter(Warranty.item_uid == "1-1-1").one_or_none()
@@ -25,11 +25,11 @@ def test_request_warranty_status(fresh_database):
     with Session() as s:
         s.add(Warranty(**TEST_WARRANTY))
     with app.test_client() as test_client:
-        response = test_client.get("/warranty/1-1-1")
+        response = test_client.get("/api/v1/warranty/1-1-1")
         assert response.status_code == 200
         assert json.loads(response.data)["status"] == TEST_WARRANTY["status"]
 
-        bad_response = test_client.get("/warranty/2-2-2")
+        bad_response = test_client.get("/api/v1/warranty/2-2-2")
         assert bad_response.status_code == 404
         assert "message" in json.loads(bad_response.data)
 
@@ -38,7 +38,7 @@ def test_request_stop_warranty(fresh_database):
     with Session() as s:
         s.add(Warranty(**TEST_WARRANTY))
     with app.test_client() as test_client:
-        response = test_client.delete("/warranty/1-1-1")
+        response = test_client.delete("/api/v1/warranty/1-1-1")
         assert response.status_code == 204
     with Session() as s:
         created_warranty = s.query(Warranty).filter(Warranty.item_uid == "1-1-1").one_or_none()
@@ -49,10 +49,12 @@ def test_request_warranty_result(fresh_database):
     with Session() as s:
         s.add(Warranty(**TEST_WARRANTY))
     with app.test_client() as test_client:
-        response = test_client.post("/warranty/1-1-1/warranty", json={"reason": "", "availableCount": 1})
+        response = test_client.post("/api/v1/warranty/1-1-1/warranty",
+                                    json={"reason": "", "availableCount": 1})
         assert response.status_code == 200
         assert json.loads(response.data)["decision"] == "RETURN"
 
-        response = test_client.post("/warranty/1-1-1/warranty", json={"reason": "", "availableCount": 0})
+        response = test_client.post("/api/v1/warranty/1-1-1/warranty",
+                                    json={"reason": "", "availableCount": 0})
         assert response.status_code == 200
         assert json.loads(response.data)["decision"] == "FIXING"

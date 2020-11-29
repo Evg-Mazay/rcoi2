@@ -24,17 +24,18 @@ def add_some_order():
 def test_request_new_order(fresh_database):
     with app.test_client() as test_client:
         with requests_mock.Mocker(real_http=True) as m:
+            m.get(re.compile("/manage/health"), text='')
             m.post(
-                re.compile("/warehouse"),
+                re.compile("/api/v1/warehouse"),
                 json={"orderItemUid": "item-1", "orderUid": "1-1-1", "model": "Lego 8880", "size": "L"}
             )
-            m.post(re.compile("/warranty/item-1"))
+            m.post(re.compile("/api/v1/warranty/item-1"))
 
             response = test_client.post(
-                "/orders/1",
+                "/api/v1/orders/1",
                 json={"orderUid": "1-1-1", "model": "Lego 8880", "size": "L"}
             )
-            assert response.status == "201 CREATED"
+            assert response.status == "200 OK"
             assert response.json["orderUid"]
 
     with Session() as s:
@@ -49,7 +50,7 @@ def test_request_new_order(fresh_database):
 
 def test_request_order(fresh_database, add_some_order):
     with app.test_client() as test_client:
-        response = test_client.get("/orders/1/1-1-1")
+        response = test_client.get("/api/v1/orders/1/1-1-1")
         assert response.json["itemUid"] == 'item-1'
         assert response.json["orderUid"] == '1-1-1'
         assert response.json["status"] == "PAID"
@@ -57,7 +58,7 @@ def test_request_order(fresh_database, add_some_order):
 
 def test_request_all_orders(fresh_database, add_some_order):
     with app.test_client() as test_client:
-        response = test_client.get("/orders/1")
+        response = test_client.get("/api/v1/orders/1")
         assert response.json[0]["itemUid"] == 'item-1'
         assert response.json[0]["orderUid"] == '1-1-1'
         assert response.json[0]["status"] == "PAID"
@@ -66,12 +67,13 @@ def test_request_all_orders(fresh_database, add_some_order):
 def test_request_warranty(fresh_database, add_some_order):
     with app.test_client() as test_client:
         with requests_mock.Mocker(real_http=True) as m:
+            m.get(re.compile("/manage/health"), text='')
             m.post(
-                re.compile("/warehouse"),
+                re.compile("/api/v1/warehouse"),
                 json={"warrantyDate": "2020-11-11", "decision": "FIXING"}
             )
             response = test_client.post(
-                "/orders/1-1-1/warranty",
+                "/api/v1/orders/1-1-1/warranty",
                 json={"reason": "Broken"}
             )
             assert response.status == "200 OK"
@@ -81,6 +83,7 @@ def test_request_warranty(fresh_database, add_some_order):
 def test_request_delete_order(fresh_database, add_some_order):
     with app.test_client() as test_client:
         with requests_mock.Mocker(real_http=True) as m:
-            m.delete(re.compile("/warehouse"))
-            response = test_client.delete("/orders/1-1-1")
+            m.get(re.compile("/manage/health"), text='')
+            m.delete(re.compile("/api/v1/warehouse"))
+            response = test_client.delete("/api/v1/orders/1-1-1")
             assert response.status == "204 NO CONTENT"

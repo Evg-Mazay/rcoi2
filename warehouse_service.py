@@ -13,7 +13,8 @@ import database
 
 
 app = Flask(__name__)
-WARRANTY_SERVICE_URL = os.environ.get("WARRANTY_SERVICE", "localhost")
+ROOT_PATH = "/api/v1"
+WARRANTY_SERVICE_URL = os.environ.get("WARRANTY_SERVICE", "localhost:8180")
 print(f"Warranty service url: {WARRANTY_SERVICE_URL} ($WARRANTY_SERVICE)")
 
 
@@ -55,12 +56,12 @@ def refresh_items_in_db():
         print("Initialized default values in Item table")
 
 
-@app.route("/", methods=["GET"])
+@app.route("/manage/health", methods=["GET"])
 def health_check():
     return "UP", 200
 
 
-@app.route("/warehouse/<string:order_item_id>", methods=["GET"])
+@app.route(f"{ROOT_PATH}/warehouse/<string:order_item_id>", methods=["GET"])
 def request_get_info(order_item_id):
     """
     Информация о вещах на складе
@@ -80,7 +81,7 @@ def request_get_info(order_item_id):
         }, 200
 
 
-@app.route("/warehouse", methods=["POST"])
+@app.route(f"{ROOT_PATH}/warehouse", methods=["POST"])
 def request_new_item():
     """
     Запрос на получение вещи со склада по новому заказу
@@ -119,7 +120,7 @@ def request_new_item():
         }, 200
 
 
-@app.route("/warehouse/<string:order_item_id>/warranty", methods=["POST"])
+@app.route(f"{ROOT_PATH}/warehouse/<string:order_item_id>/warranty", methods=["POST"])
 def request_warranty(order_item_id):
     """
     Запрос решения по гарантии
@@ -128,6 +129,9 @@ def request_warranty(order_item_id):
         warranty_request = WarrantyRequest.parse_obj(request.get_json(force=True))
     except ValidationError as e:
         return {"message": e.errors()}, 400
+
+    if not requests.get(f"http://{WARRANTY_SERVICE_URL}/manage/health").ok:
+        return {"message": "Warranty sevice unavailable"}, 422
 
     with database.Session() as s:
         order_and_item = (
@@ -141,16 +145,16 @@ def request_warranty(order_item_id):
         available_count = order_and_item.Item.available_count
 
     warranty_service_response = requests.post(
-        f"http://{WARRANTY_SERVICE_URL}/warranty/{order_item_id}/warranty",
+        f"http://{WARRANTY_SERVICE_URL}{ROOT_PATH}/warranty/{order_item_id}/warranty",
         json={"reason": warranty_request.reason, "availableCount": available_count}
     )
     if not warranty_service_response.ok:
-        return {"message": "Warranty not found"}, 422
+        return {"message": f"Warranty not found for itemUid '{order_item_id}'"}, 404
 
     return warranty_service_response.json(), 200
 
 
-@app.route("/warehouse/<string:order_item_id>", methods=["DELETE"])
+@app.route(f"{ROOT_PATH}/warehouse/<string:order_item_id>", methods=["DELETE"])
 def request_remove_item(order_item_id):
     """
     Вернуть заказ на склад
@@ -176,4 +180,5 @@ if __name__ == '__main__':
     print("LISTENING ON PORT:", PORT, "($PORT)")
     database.create_schema()
     refresh_items_in_db()
-    app.run("0.0.0.0", PORT)
+    app.url_map.strict_slashes = False
+    app.run("0.0.0.0", 8280)

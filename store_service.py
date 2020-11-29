@@ -2,6 +2,7 @@ import os
 from uuid import uuid4
 from enum import Enum
 from datetime import date
+import json
 
 from pydantic import BaseModel, ValidationError
 from flask import Flask, request, jsonify
@@ -11,11 +12,12 @@ import requests
 import database
 
 app = Flask(__name__)
-ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE", "localhost")
+ROOT_PATH = "/api/v1"
+ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE", "localhost:8380")
 print(f"Order service url: {ORDER_SERVICE_URL} ($ORDER_SERVICE)")
-WAREHOUSE_SERVICE_URL = os.environ.get("WAREHOUSE_SERVICE", "localhost")
+WAREHOUSE_SERVICE_URL = os.environ.get("WAREHOUSE_SERVICE", "localhost:8280")
 print(f"Warehouse service url: {WAREHOUSE_SERVICE_URL} ($WAREHOUSE_SERVICE)")
-WARRANTY_SERVICE_URL = os.environ.get("WARRANTY_SERVICE", "localhost")
+WARRANTY_SERVICE_URL = os.environ.get("WARRANTY_SERVICE", "localhost:8180")
 print(f"Warranty service url: {WARRANTY_SERVICE_URL} ($WARRANTY_SERVICE)")
 
 
@@ -50,21 +52,29 @@ def is_user_exists(user_uid):
         return bool(user)
 
 
-@app.route("/", methods=["GET"])
+@app.route("/manage/health", methods=["GET"])
 def health_check():
     return "UP", 200
 
 
-@app.route("/store/<string:user_uid>/orders", methods=["GET"])
+@app.route(f"{ROOT_PATH}/store/<string:user_uid>/orders", methods=["GET"])
 def request_all_orders(user_uid):
     """
     Получить список заказов пользователя
     """
+    user_uid = user_uid.lower()
     if not is_user_exists(user_uid):
         return {"message": "User not found"}, 404
 
+    if not requests.get(f"http://{ORDER_SERVICE_URL}/manage/health").ok:
+        return {"message": "Order sevice unavailable"}, 422
+    if not requests.get(f"http://{WAREHOUSE_SERVICE_URL}/manage/health").ok:
+        return {"message": "Warehouse sevice unavailable"}, 422
+    if not requests.get(f"http://{WARRANTY_SERVICE_URL}/manage/health").ok:
+        return {"message": "Warranty sevice unavailable"}, 422
+
     order_service_response = requests.get(
-        f"http://{ORDER_SERVICE_URL}/orders/{user_uid}"
+        f"http://{ORDER_SERVICE_URL}{ROOT_PATH}/orders/{user_uid}"
     )
     if not order_service_response.ok:
         return {"message": "Order not found"}, 422
@@ -76,13 +86,13 @@ def request_all_orders(user_uid):
         item_uid = order["itemUid"]
 
         warehouse_service_response = requests.get(
-            f"http://{WAREHOUSE_SERVICE_URL}/warehouse/{order_uid}"
+            f"http://{WAREHOUSE_SERVICE_URL}{ROOT_PATH}/warehouse/{item_uid}"
         )
         if not warehouse_service_response.ok:
             return {"message": "Order in warehouse not found"}, 422
 
         warranty_service_response = requests.get(
-            f"http://{WARRANTY_SERVICE_URL}/warranty/{item_uid}"
+            f"http://{WARRANTY_SERVICE_URL}{ROOT_PATH}/warranty/{item_uid}"
         )
         if not warranty_service_response.ok:
             return {"message": "Warranty not found"}, 422
@@ -99,29 +109,38 @@ def request_all_orders(user_uid):
     return jsonify(result), 200
 
 
-@app.route("/store/<string:user_uid>/<string:order_uid>", methods=["GET"])
+@app.route(f"{ROOT_PATH}/store/<string:user_uid>/<string:order_uid>", methods=["GET"])
 def request_order(user_uid, order_uid):
     """
     Информация по конкретному заказу
     """
+    user_uid = user_uid.lower()
+    order_uid = order_uid.lower()
     if not is_user_exists(user_uid):
         return {"message": "User not found"}, 404
 
+    if not requests.get(f"http://{ORDER_SERVICE_URL}/manage/health").ok:
+        return {"message": "Order sevice unavailable"}, 422
+    if not requests.get(f"http://{WAREHOUSE_SERVICE_URL}/manage/health").ok:
+        return {"message": "Warehouse sevice unavailable"}, 422
+    if not requests.get(f"http://{WARRANTY_SERVICE_URL}/manage/health").ok:
+        return {"message": "Warranty sevice unavailable"}, 422
+
     order_service_response = requests.get(
-        f"http://{ORDER_SERVICE_URL}/orders/{user_uid}/{order_uid}"
+        f"http://{ORDER_SERVICE_URL}{ROOT_PATH}/orders/{user_uid}/{order_uid}"
     )
     if not order_service_response.ok:
         return {"message": "Order not found"}, 422
     item_uid = order_service_response.json()["itemUid"]
 
     warehouse_service_response = requests.get(
-        f"http://{WAREHOUSE_SERVICE_URL}/warehouse/{order_uid}"
+        f"http://{WAREHOUSE_SERVICE_URL}{ROOT_PATH}/warehouse/{item_uid}"
     )
     if not warehouse_service_response.ok:
         return {"message": "Order in warehouse not found"}, 422
 
     warranty_service_response = requests.get(
-        f"http://{WARRANTY_SERVICE_URL}/warranty/{item_uid}"
+        f"http://{WARRANTY_SERVICE_URL}{ROOT_PATH}/warranty/{item_uid}"
     )
     if not warranty_service_response.ok:
         return {"message": "Warranty not found"}, 422
@@ -136,13 +155,18 @@ def request_order(user_uid, order_uid):
            }, 200
 
 
-@app.route("/store/<string:user_uid>/<string:order_uid>/warranty", methods=["POST"])
+@app.route(f"{ROOT_PATH}/store/<string:user_uid>/<string:order_uid>/warranty", methods=["POST"])
 def request_warranty(user_uid, order_uid):
     """
     Запрос гарантии по заказу
     """
+    user_uid = user_uid.lower()
+    order_uid = order_uid.lower()
     if not is_user_exists(user_uid):
         return {"message": "User not found"}, 404
+
+    if not requests.get(f"http://{ORDER_SERVICE_URL}/manage/health").ok:
+        return {"message": "Order sevice unavailable"}, 422
 
     try:
         warranty_request = WarrantyRequest.parse_obj(request.get_json(force=True))
@@ -150,21 +174,25 @@ def request_warranty(user_uid, order_uid):
         return {"message": e.errors()}, 400
 
     order_service_response = requests.post(
-        f"http://{ORDER_SERVICE_URL}/orders/{order_uid}/warranty",
+        f"http://{ORDER_SERVICE_URL}{ROOT_PATH}/orders/{order_uid}/warranty",
         json={"reason": warranty_request.reason}
     )
     if not order_service_response.ok:
         return {"message": "Order not found"}, 422
-    return order_service_response.json(), 200
+    return {"orderUid": order_uid, **order_service_response.json()}, 200
 
 
-@app.route("/store/<string:user_uid>/purchase", methods=["POST"])
+@app.route(f"{ROOT_PATH}/store/<string:user_uid>/purchase", methods=["POST"])
 def request_purchase(user_uid):
     """
     Выполнить покупку
     """
+    user_uid = user_uid.lower()
     if not is_user_exists(user_uid):
         return {"message": "User not found"}, 404
+
+    if not requests.get(f"http://{ORDER_SERVICE_URL}/manage/health").ok:
+        return {"message": "Order sevice unavailable"}, 422
 
     try:
         new_order_request = NewOrderRequest.parse_obj(request.get_json(force=True))
@@ -172,24 +200,31 @@ def request_purchase(user_uid):
         return {"message": e.errors()}, 400
 
     order_service_response = requests.post(
-        f"http://{ORDER_SERVICE_URL}/orders/{user_uid}",
+        f"http://{ORDER_SERVICE_URL}{ROOT_PATH}/orders/{user_uid}",
         json={"model": new_order_request.model, "size": new_order_request.size}
     )
     if not order_service_response.ok:
         return {"message": "Order not created"}, 422
-    return '', 201
+
+    order_uid = order_service_response.json()["orderUid"]
+    return '', 201, {"Location": f"{ROOT_PATH}/store/{user_uid}/{order_uid}"}
 
 
-@app.route("/store/<string:user_uid>/<string:order_uid>/refund", methods=["DELETE"])
+@app.route(f"{ROOT_PATH}/store/<string:user_uid>/<string:order_uid>/refund", methods=["DELETE"])
 def request_refund(user_uid, order_uid):
     """
     Вернуть заказ
     """
+    user_uid = user_uid.lower()
+    order_uid = order_uid.lower()
     if not is_user_exists(user_uid):
         return {"message": "User not found"}, 404
 
+    if not requests.get(f"http://{ORDER_SERVICE_URL}/manage/health").ok:
+        return {"message": "Order sevice unavailable"}, 422
+
     order_service_response = requests.delete(
-        f"http://{ORDER_SERVICE_URL}/orders/{user_uid}"
+        f"http://{ORDER_SERVICE_URL}{ROOT_PATH}/orders/{order_uid}"
     )
     if not order_service_response.ok:
         return {"message": "Order not created"}, 422
@@ -201,4 +236,5 @@ if __name__ == '__main__':
     print("LISTENING ON PORT:", PORT, "($PORT)")
     database.create_schema()
     refresh_items_in_db()
-    app.run("0.0.0.0", PORT)
+    app.url_map.strict_slashes = False
+    app.run("0.0.0.0", 8480)

@@ -18,8 +18,9 @@ def add_some_user():
 def test_request_all_orders(fresh_database, add_some_user):
     with app.test_client() as test_client:
         with requests_mock.Mocker(real_http=True) as m:
+            m.get(re.compile("/manage/health"), text='')
             m.get(
-                re.compile("/orders/1"),
+                re.compile("/api/v1/orders/1"),
                 json=[{
                     'itemUid': 'item-1',
                     'orderDate': '2020-11-22T00:00:00',
@@ -28,18 +29,18 @@ def test_request_all_orders(fresh_database, add_some_user):
                 }]
             )
             m.get(
-                re.compile("/warehouse"),
+                re.compile("/api/v1/warehouse"),
                 json={'model': 'item one', 'size': 'L'}
             )
             m.get(
-                re.compile("/warranty"),
+                re.compile("/api/v1/warranty"),
                 json={
                     "itemUid": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
                     "warrantyDate": "2020-11-22T00:00:00",
                     "status": "FIXING"
                 }
             )
-            response = test_client.get("/store/1/orders")
+            response = test_client.get("/api/v1/store/1/orders")
             assert response.status == "200 OK"
             assert "orderUid" in response.json[0]
             assert "model" in response.json[0]
@@ -52,8 +53,9 @@ def test_request_all_orders(fresh_database, add_some_user):
 def test_request_order(fresh_database, add_some_user):
     with app.test_client() as test_client:
         with requests_mock.Mocker(real_http=True) as m:
+            m.get(re.compile("/manage/health"), text='')
             m.get(
-                re.compile("/orders/1/1-1-1"),
+                re.compile("/api/v1/orders/1/1-1-1"),
                 json={
                     'itemUid': 'item-1',
                     'orderDate': '2020-11-22T00:00:00',
@@ -62,11 +64,11 @@ def test_request_order(fresh_database, add_some_user):
                 }
             )
             m.get(
-                re.compile("/warehouse"),
+                re.compile("/api/v1/warehouse"),
                 json={'model': 'item one', 'size': 'L'}
             )
             m.get(
-                re.compile("/warranty"),
+                re.compile("/api/v1/warranty"),
                 json={
                     "itemUid": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
                     "warrantyDate": "2020-11-22T00:00:00",
@@ -74,7 +76,7 @@ def test_request_order(fresh_database, add_some_user):
                 }
             )
 
-            response = test_client.get("/store/1/1-1-1")
+            response = test_client.get("/api/v1/store/1/1-1-1")
             assert response.status == "200 OK"
             assert "orderUid" in response.json
             assert "model" in response.json
@@ -87,12 +89,13 @@ def test_request_order(fresh_database, add_some_user):
 def test_request_warranty(fresh_database, add_some_user):
     with app.test_client() as test_client:
         with requests_mock.Mocker(real_http=True) as m:
+            m.get(re.compile("/manage/health"), text='')
             m.post(
-                re.compile("/orders"),
+                re.compile("/api/v1/orders"),
                 json={"warrantyDate": "2020-11-11", "decision": "FIXING"}
             )
             response = test_client.post(
-                "/store/1/1-1-1/warranty",
+                "/api/v1/store/1/1-1-1/warranty",
                 json={"reason": "Broken"}
             )
             assert response.status == "200 OK"
@@ -102,14 +105,17 @@ def test_request_warranty(fresh_database, add_some_user):
 def test_request_purchase(fresh_database, add_some_user):
     with app.test_client() as test_client:
         with requests_mock.Mocker(real_http=True) as m:
-            m.post(re.compile("/orders/1"))
-            response = test_client.post("/store/1/purchase", json={"size": "L", "model": "item 1"})
+            m.get(re.compile("/manage/health"), text='')
+            m.post(re.compile("/api/v1/orders/1"), json={"orderUid": "1-1-1"})
+            response = test_client.post("/api/v1/store/1/purchase",
+                                        json={"size": "L", "model": "item 1"})
             assert response.status == "201 CREATED"
 
 
 def test_request_refund(fresh_database, add_some_user):
     with app.test_client() as test_client:
         with requests_mock.Mocker(real_http=True) as m:
-            m.delete(re.compile("/orders/1"))
-            response = test_client.delete("/store/1/1-1-1/refund")
+            m.get(re.compile("/manage/health"), text='')
+            m.delete(re.compile("/api/v1/orders/1"))
+            response = test_client.delete("/api/v1/store/1/1-1-1/refund")
             assert response.status == "204 NO CONTENT"
